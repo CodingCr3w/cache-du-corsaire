@@ -1,3 +1,4 @@
+import React from "react"
 import clsx from "clsx"
 import * as Checkbox from "@radix-ui/react-checkbox"
 import * as Popover from "@radix-ui/react-popover"
@@ -8,7 +9,12 @@ import type { LootType } from "config/loot"
 import Filters from "components/icons/Filters"
 import PopoverContent from "components/ui/PopoverContent"
 
-export default function FiltersPopover() {
+type Props = {
+  value: LootType[]
+  onChange: React.Dispatch<React.SetStateAction<LootType[]>>
+}
+
+export default function FiltersPopover({ value, onChange }: Props) {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
@@ -35,6 +41,16 @@ export default function FiltersPopover() {
                 key={type}
                 name="butin"
                 value={type}
+                checked={value.includes(type as LootType)}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    onChange((prev) => [...prev, type as LootType])
+                  } else {
+                    onChange((prev) =>
+                      prev.filter((selectedType) => selectedType !== type)
+                    )
+                  }
+                }}
                 className={clsx(
                   "w-20 p-2 rounded-lg bg-surface-500 aspect-square",
                   "flex items-center justify-center",

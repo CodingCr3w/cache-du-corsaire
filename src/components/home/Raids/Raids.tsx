@@ -1,6 +1,8 @@
 import React from "react"
 
 import useRaids from "api/useRaids"
+import useDebounce from "hooks/useDebounce"
+import type { LootType } from "config/loot"
 import useTable from "./useTable"
 
 import Table from "components/ui/Table"
@@ -12,11 +14,21 @@ import RaidModal from "./components/RaidModal"
 import FiltersPopover from "./components/FiltersPopover"
 
 export default function Raids(props: React.ComponentProps<"section">) {
-  const { data, isLoading } = useRaids()
+  const [newRaidModalOpen, setNewRaidModalOpen] = React.useState(false)
+
+  const [query, setQuery] = React.useState("")
+  const debouncedQuery = useDebounce(query)
+  const [selectedLootTypes, setSelectedLootTypes] = React.useState<LootType[]>(
+    []
+  )
+
+  const { data, isLoading } = useRaids({
+    query: debouncedQuery,
+    lootTypes: selectedLootTypes,
+  })
   const table = useTable({
     data,
   })
-  const [newRaidModalOpen, setNewRaidModalOpen] = React.useState(false)
 
   return (
     <section aria-label="Raids de l'équipage" {...props}>
@@ -31,11 +43,16 @@ export default function Raids(props: React.ComponentProps<"section">) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <TextInput
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher un raid"
             leadingIcon={<Search />}
             className="min-w-[14rem]"
           />
-          <FiltersPopover />
+          <FiltersPopover
+            value={selectedLootTypes}
+            onChange={setSelectedLootTypes}
+          />
           <Button onClick={() => setNewRaidModalOpen(true)}>
             <Plus className="w-5 h-auto" />
             Nouveau raid
