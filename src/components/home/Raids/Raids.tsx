@@ -1,5 +1,6 @@
 import React from "react"
 
+import useRaids from "api/useRaids"
 import useTable from "./useTable"
 
 import Table from "components/ui/Table"
@@ -11,7 +12,10 @@ import RaidModal from "./components/RaidModal"
 import FiltersPopover from "./components/FiltersPopover"
 
 export default function Raids(props: React.ComponentProps<"section">) {
-  const table = useTable()
+  const { data, isLoading } = useRaids()
+  const table = useTable({
+    data,
+  })
   const [newRaidModalOpen, setNewRaidModalOpen] = React.useState(false)
 
   return (
@@ -38,7 +42,7 @@ export default function Raids(props: React.ComponentProps<"section">) {
           </Button>
         </div>
       </div>
-      <Table table={table} className="mt-5" />
+      <Table isLoading={isLoading} table={table} className="mt-5" />
       <RaidModal
         open={newRaidModalOpen}
         onClose={() => setNewRaidModalOpen(false)}
