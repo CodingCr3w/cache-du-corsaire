@@ -3,19 +3,13 @@ import Fuse from "fuse.js"
 
 import { generateRaids } from "mocks/data/raids"
 import type { LootType } from "config/loot"
+import type { RaidForm } from "components/home/Raids/components/RaidModal/useRaidForm"
 
 // Simule un délai de réponse de 1 seconde
 const DELAY = 1000
 
 // Génère un jeu de données de raids
 const raids = generateRaids()
-
-type NewRaid = {
-  name: string
-  location: string
-  date: Date
-  loot: Record<LootType, number>
-}
 
 export const handlers = [
   // GET /api/raids
@@ -60,7 +54,7 @@ export const handlers = [
     return HttpResponse.json(results)
   }),
   // POST /api/raids
-  http.post<any, NewRaid>("api/raids", async ({ request }) => {
+  http.post<any, RaidForm>("api/raids", async ({ request }) => {
     // Récupère le raid depuis la requête
     const raid = await request.json()
     // Ajoute le raid à la liste
@@ -78,8 +72,17 @@ export const handlers = [
     await delay(DELAY)
     return HttpResponse.json({ ok: true })
   }),
+  // DELETE /api/raids/:id
+  http.delete<{ id: string }>("api/raids/:id", async ({ params }) => {
+    const raidId = params.id
+    // Supprime le raid de la liste
+    const raidIndex = raids.findIndex((raid) => raid.id === raidId)
+    raids.splice(raidIndex, 1)
+    await delay(DELAY)
+    return HttpResponse.json({ ok: true })
+  }),
   // PATCH /api/raids/:id
-  http.patch<{ id: string }, NewRaid>(
+  http.patch<{ id: string }, RaidForm>(
     "api/raids/:id",
     async ({ params, request }) => {
       const raidId = params.id
@@ -100,13 +103,4 @@ export const handlers = [
       return HttpResponse.json({ ok: true })
     }
   ),
-  // DELETE /api/raids/:id
-  http.delete<{ id: string }>("api/raids/:id", async ({ params }) => {
-    const raidId = params.id
-    // Supprime le raid de la liste
-    const raidIndex = raids.findIndex((raid) => raid.id === raidId)
-    raids.splice(raidIndex, 1)
-    await delay(DELAY)
-    return HttpResponse.json({ ok: true })
-  }),
 ]

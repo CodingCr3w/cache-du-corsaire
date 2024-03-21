@@ -3,34 +3,45 @@ import React from "react"
 import useRaids from "api/useRaids"
 import useDebounce from "hooks/useDebounce"
 import useTable from "./useTable"
-import type { Raid } from "schemas/raids"
 import type { LootType } from "config/loot"
+import type { Raid } from "schemas/raids"
 
 import Table from "components/ui/Table"
-import TextInput from "components/ui/TextInput"
-import Search from "components/icons/Search"
 import Button from "components/ui/Button"
 import Plus from "components/icons/Plus"
+import TextInput from "components/ui/TextInput"
+import Search from "components/icons/Search"
 import RaidModal from "./components/RaidModal"
 import FiltersPopover from "./components/FiltersPopover"
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal"
 
 export default function Raids(props: React.ComponentProps<"section">) {
   const [newRaidModalOpen, setNewRaidModalOpen] = React.useState(false)
 
+  // Filters
   const [query, setQuery] = React.useState("")
   const debouncedQuery = useDebounce(query)
   const [selectedLootTypes, setSelectedLootTypes] = React.useState<LootType[]>(
     []
   )
-  const [selectedRaid, setSelectedRaid] = React.useState<Raid>()
 
+  // Récupération des données (liste des raids)
   const { data, isLoading } = useRaids({
-    query: debouncedQuery,
-    lootTypes: selectedLootTypes,
+    filters: {
+      query: debouncedQuery,
+      lootTypes: selectedLootTypes,
+    },
   })
+
+  // Gestion des actions sur les lignes du tableau
+  const [raidToDelete, setRaidToDelete] = React.useState<Raid>()
+  const [raidToEdit, setRaidToEdit] = React.useState<Raid>()
+
+  // Construction du tableau
   const table = useTable({
     data,
-    onEdit: setSelectedRaid,
+    onDelete: setRaidToDelete,
+    onEdit: setRaidToEdit,
   })
 
   return (
@@ -53,7 +64,7 @@ export default function Raids(props: React.ComponentProps<"section">) {
             className="min-w-[14rem]"
           />
           <FiltersPopover
-            value={selectedLootTypes}
+            selectedLootTypes={selectedLootTypes}
             onChange={setSelectedLootTypes}
           />
           <Button onClick={() => setNewRaidModalOpen(true)}>
@@ -64,12 +75,16 @@ export default function Raids(props: React.ComponentProps<"section">) {
       </div>
       <Table isLoading={isLoading} table={table} className="mt-5" />
       <RaidModal
-        raid={selectedRaid}
-        open={newRaidModalOpen || !!selectedRaid}
+        raid={raidToEdit}
+        open={newRaidModalOpen || !!raidToEdit}
         onClose={() => {
           setNewRaidModalOpen(false)
-          setSelectedRaid(undefined)
+          setRaidToEdit(undefined)
         }}
+      />
+      <ConfirmDeleteModal
+        raid={raidToDelete}
+        onClose={() => setRaidToDelete(undefined)}
       />
     </section>
   )

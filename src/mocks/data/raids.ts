@@ -1,7 +1,8 @@
 import { getRandomInt } from "utils/numbers"
 import { getRandomPastDate } from "utils/dates"
 import { LootType } from "config/loot"
-import type { Loot, Raid } from "types/data"
+import type { Loot } from "schemas/loot"
+import type { Raid } from "schemas/raids"
 
 enum PirateHideout {
   MainShip = "Navire Principal",

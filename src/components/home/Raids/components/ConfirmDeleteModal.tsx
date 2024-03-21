@@ -1,3 +1,4 @@
+import useDeleteRaid from "api/useDeleteRaid"
 import Button from "components/ui/Button"
 import Modal from "components/ui/Modal"
 import type { Raid } from "schemas/raids"
@@ -8,6 +9,7 @@ type Props = {
 }
 
 export default function ConfirmDeleteModal({ raid, onClose }: Props) {
+  const { mutate, isPending } = useDeleteRaid()
   if (!raid) return null
 
   return (
@@ -23,7 +25,13 @@ export default function ConfirmDeleteModal({ raid, onClose }: Props) {
         <Button fullWidth variant="outlinePrimary" onClick={onClose}>
           Annuler
         </Button>
-        <Button fullWidth>Supprimer</Button>
+        <Button
+          fullWidth
+          disabled={isPending}
+          onClick={() => mutate(raid.id, { onSuccess: onClose })}
+        >
+          Supprimer{isPending && "..."}
+        </Button>
       </Modal.Actions>
     </Modal>
   )

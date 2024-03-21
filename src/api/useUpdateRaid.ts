@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import toast from "react-hot-toast"
 
-import client from "./client"
 import type { RaidForm } from "components/home/Raids/components/RaidModal/useRaidForm"
+import client from "./client"
 
 type Params = {
   raidId: string

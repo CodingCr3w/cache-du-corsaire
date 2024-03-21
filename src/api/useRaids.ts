@@ -1,40 +1,42 @@
 import { useQuery } from "@tanstack/react-query"
 
+import type { Raid } from "schemas/raids"
 import { parseRaids } from "schemas/raids"
 import client from "./client"
-import type { Raid } from "schemas/raids"
 import type { LootType } from "config/loot"
 
 type Params<T> = {
-  query?: string
-  lootTypes?: LootType[]
-  hideout?: string
+  filters?: {
+    query?: string
+    lootTypes?: LootType[]
+    location?: string
+  }
   select?: (data: Raid[]) => T
 }
 
 export default function useRaids<T = Raid[]>({
+  filters = {
+    query: "",
+    lootTypes: [],
+    location: "",
+  },
   select,
-  ...filters
-}: Params<T> = {}) {
+}: Params<T>) {
   return useQuery({
     queryKey: ["raids", filters],
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (filters.query) {
-        params.set("query", filters.query)
-      }
-      if (filters.lootTypes) {
+      if (filters.query) params.set("query", filters.query)
+      if (filters.lootTypes)
         params.set("lootTypes", filters.lootTypes.join(","))
-      }
-      if (filters.hideout) {
-        params.set("location", filters.hideout)
-      }
+      if (filters.location) params.set("location", filters.location)
       const result = await client("api/raids?" + params.toString())
-      return parseRaids(result)
+      const raids = parseRaids(result)
+      return raids
     },
     select,
     meta: {
-      error: "La liste des raids n'a pas pu être récupérée",
+      error: "Impossible de récupérer les raids",
     },
   })
 }

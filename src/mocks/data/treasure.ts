@@ -1,5 +1,5 @@
+import type { Loot } from "schemas/loot"
 import { LootType } from "config/loot"
-import type { Loot } from "types/data"
 
 export const TREASURE: Loot[] = [
   {

@@ -1,12 +1,12 @@
 import React from "react"
 import clsx from "clsx"
 
-import { LOOT_CONFIG } from "config/loot"
 import useNewRaid from "api/useNewRaid"
 import useUpdateRaid from "api/useUpdateRaid"
+import { LOOT_CONFIG } from "config/loot"
 import useRaidForm from "./useRaidForm"
 import type { LootType } from "config/loot"
-import type { Raid } from "types/data"
+import type { Raid } from "schemas/raids"
 
 import Button from "components/ui/Button"
 import DatePicker from "components/ui/DatePicker"
@@ -21,23 +21,24 @@ type Props = {
   onClose: () => void
 }
 
-export default function RaidModal({ raid, ...props }: Props) {
+export default function RaidModal({ raid, open, onClose }: Props) {
   // Mutation pour créer un nouveau raid
   const { mutate: createRaid, isPending: isCreatingRaid } = useNewRaid()
-  // Mutation pour mettre à jour un raid
-  const { mutate: updateRaid, isPending: isUpdating } = useUpdateRaid()
+  // Mutation pour mettre à jour un raid existant
+  const { mutate: updateRaid, isPending: isUpdatingRaid } = useUpdateRaid()
 
-  const { state, setState, handleSubmit, errors, reset } = useRaidForm({
+  // Loading state commun
+  const isPending = isCreatingRaid || isUpdatingRaid
+
+  // Gestion du formulaire (state, erreurs, callbacks)
+  const { state, setState, errors, handleSubmit, reset } = useRaidForm({
     raid,
     onSubmit: (data) => {
+      // Si on a un raid, on le met à jour
       if (!!raid) {
-        updateRaid(
-          { data, raidId: raid.id },
-          {
-            onSuccess: handleClose,
-          }
-        )
+        updateRaid({ data, raidId: raid.id }, { onSuccess: handleClose })
       } else {
+        // sinon on en créer un nouveau
         createRaid(data, {
           onSuccess: handleClose,
         })
@@ -46,8 +47,6 @@ export default function RaidModal({ raid, ...props }: Props) {
   })
   const { name, location, date, loot } = state
   const { nameError, locationError, dateError, lootError } = errors
-  const isEditing = !!raid
-  const isPending = isCreatingRaid || isUpdating
 
   // Gestion des changements de quantité de butin
   function handleLootValueChange(content: string | null, type: LootType) {
@@ -63,12 +62,12 @@ export default function RaidModal({ raid, ...props }: Props) {
   // Fermeture du modal (on reset le state)
   function handleClose() {
     reset()
-    props.onClose()
+    onClose()
   }
 
   return (
-    <Modal {...props} large>
-      <Modal.Title>{isEditing ? raid.name : "Nouveau Raid"}</Modal.Title>
+    <Modal open={open} onClose={handleClose} large>
+      <Modal.Title>{!!raid ? raid.name : "Nouveau Raid"}</Modal.Title>
       <Modal.Subtitle>
         {!!raid
           ? "Du butin à réaffecter ? Le raid à renommer ? Pas de problèmes, modifie les informations du raid ci-dessous :"
@@ -80,31 +79,31 @@ export default function RaidModal({ raid, ...props }: Props) {
             autoComplete="off"
             name="raid-name"
             label="Nom du raid"
-            placeholder="Ex: Attaque surprise de la flotte royale"
             value={name}
+            error={nameError}
             onChange={(evt) =>
               setState((prev) => ({ ...prev, name: evt.target.value }))
             }
-            error={nameError}
+            placeholder="Ex: Attaque surprise de la flotte royale"
           />
           <TextInput
             autoComplete="off"
             name="raid-location"
             label="Lieu"
-            placeholder="Ex: La baie des requins"
             value={location}
+            error={locationError}
             onChange={(evt) =>
               setState((prev) => ({ ...prev, location: evt.target.value }))
             }
-            error={locationError}
+            placeholder="Ex: La baie des requins"
           />
           <DatePicker
             name="raid-date"
-            label="Date du raid"
             dates={[date]}
             onDatesChange={(dates) =>
               setState((prev) => ({ ...prev, date: dates[0] }))
             }
+            label="Date du raid"
             error={dateError}
           />
           <fieldset
@@ -115,7 +114,7 @@ export default function RaidModal({ raid, ...props }: Props) {
             <legend className="px-2 mb-2 font-semibold text-gray-50">
               Butin
             </legend>
-            {!!lootError && (
+            {lootError && (
               <p className="mb-4 text-sm text-red-600">{lootError}</p>
             )}
             <div className="flex flex-wrap max-w-[44rem] gap-4">
@@ -133,11 +132,11 @@ export default function RaidModal({ raid, ...props }: Props) {
           </fieldset>
         </Modal.Body>
         <Modal.Actions>
-          <Button fullWidth variant="outlinePrimary" onClick={handleClose}>
+          <Button fullWidth variant="outlinePrimary" onClick={onClose}>
             Annuler
           </Button>
           <Button fullWidth type="submit" disabled={isPending}>
-            {isEditing ? "Modifier" : "Enregistrer"}
+            {!!raid ? "Mettre à jour" : "Enregistrer"}
             {isPending && "..."}
           </Button>
         </Modal.Actions>
@@ -153,7 +152,7 @@ function LootItem({
 }: {
   type: LootType
   quantity?: number
-  onChange?: (value: string | null) => void
+  onChange: (value: string | null) => void
 }) {
   const config = LOOT_CONFIG[type]
   const lootItemRef = React.useRef<HTMLDivElement>(null)
@@ -181,13 +180,13 @@ function LootItem({
           tabIndex={0}
           value={-5}
           disabled={typeof quantity !== "number" || quantity < 5}
-          onClick={() => onChange?.((Number(quantity) - 5).toString())}
+          onClick={() => onChange((Number(quantity) - 5).toString())}
         />
         <input
           aria-label="Quantité"
           tabIndex={0}
           value={quantity || "0"}
-          onChange={(evt) => onChange?.(evt.target.value)}
+          onChange={(evt) => onChange(evt.target.value)}
           className={clsx(
             "px-2 py-1 my-1 bg-gray-800 border border-gray-500 rounded-lg w-[5ch]",
             "text-center text-sm text-white font-bold appearance-none",
@@ -198,13 +197,13 @@ function LootItem({
           aria-label="Ajouter 5"
           tabIndex={0}
           value={5}
-          onClick={() => onChange?.(((quantity || 0) + 5).toString())}
+          onClick={() => onChange(((quantity || 0) + 5).toString())}
         />
       </div>
       <IconButton
         tabIndex={0}
         aria-label="Supprimer du butin"
-        onClick={() => onChange?.(null)}
+        onClick={() => onChange(null)}
         className={clsx(
           "absolute top-2 right-2 p-1",
           "hidden group-hover:flex group-focus:flex group-focus-within:flex",

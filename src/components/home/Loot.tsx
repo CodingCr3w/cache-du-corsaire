@@ -6,33 +6,40 @@ import { LOOT_CONFIG } from "config/loot"
 import useAnimatedValue from "hooks/useAnimatedValue"
 import { TREASURE } from "mocks/data/treasure"
 import type { LootType } from "config/loot"
+import type { Loot } from "schemas/loot"
 
 import Select from "components/ui/Select"
 import Spinner from "components/ui/Spinner"
+
+type LootCount = Record<LootType, number>
 
 const DEFAULT_HIDEOUT = "Toutes les planques"
 
 export default function Loot(props: React.ComponentProps<"section">) {
   const [hideout, setHideout] = React.useState(DEFAULT_HIDEOUT)
 
-  const { data: loot, isLoading: isLoadingLoot } = useRaids({
-    hideout: hideout === DEFAULT_HIDEOUT ? undefined : hideout,
-    select: (raids) =>
-      raids.reduce(
-        (acc, raid) => {
-          raid.loot.forEach((loot) => {
-            acc[loot.type] = (acc[loot.type] ?? 0) + loot.quantity
-          })
-          return acc
-        },
-        {} as Record<LootType, number>
+  // Récupération des données (répartition du butin par type)
+  const { data: loot, isLoading } = useRaids<LootCount>({
+    select: (data) =>
+      data.reduce((acc, raid) => {
+        raid.loot.forEach(({ type, quantity }) => {
+          if (acc[type] === undefined) acc[type] = 0
+          acc[type] += quantity
+        })
+        return acc
+      }, {} as LootCount),
+    filters: {
+      // On filtre sur la planque sélectionnée
+      location: hideout !== DEFAULT_HIDEOUT ? hideout : undefined,
+    },
+  })
+  // Récupération des données (liste des planques)
+  const { data: hideouts } = useRaids<string[]>({
+    select: (data) =>
+      [...new Set(data.map((item) => item.located))].sort((a, b) =>
+        a.localeCompare(b)
       ),
   })
-  const { data: hideouts, isLoading: isLoadingHideouts } = useRaids({
-    select: (raids) => [...new Set(raids.map((raid) => raid.located))],
-  })
-
-  const isLoading = isLoadingLoot || isLoadingHideouts
 
   return (
     <section aria-label="Butin de l'équipage" {...props}>

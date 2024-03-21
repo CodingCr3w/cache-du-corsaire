@@ -30,7 +30,7 @@ function toastError(error: unknown) {
   if (typeof error === "string") {
     toast.error(error)
   } else {
-    toast.error("Une erreur est survenue")
+    toast.error("Something went wrong with the request.")
   }
 }
 

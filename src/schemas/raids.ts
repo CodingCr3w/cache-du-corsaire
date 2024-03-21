@@ -1,11 +1,5 @@
-import { LootType } from "config/loot"
-import z from "zod"
-
-const lootSchema = z.object({
-  type: z.nativeEnum(LootType),
-  quantity: z.number(),
-})
-export type Loot = z.infer<typeof lootSchema>
+import * as z from "zod"
+import { lootSchema } from "./loot"
 
 const raidSchema = z.object({
   id: z.string(),

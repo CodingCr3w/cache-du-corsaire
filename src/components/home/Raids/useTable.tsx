@@ -9,9 +9,10 @@ import {
 import clsx from "clsx"
 
 import { LOOT_CONFIG } from "config/loot"
-import type { Raid } from "types/data"
+import type { Raid } from "schemas/raids"
 
 import Tooltip from "components/ui/Tooltip"
+import Trash from "components/icons/Trash"
 import IconButton from "components/ui/IconButton"
 import Pen from "components/icons/Pen"
 
@@ -23,10 +24,11 @@ const DEFAULT_DATA: Raid[] = []
 
 type Params = {
   data?: Raid[]
-  onEdit?: (raid: Raid) => void
+  onDelete: (raid: Raid) => void
+  onEdit: (raid: Raid) => void
 }
 
-export default function useTable({ data, onEdit }: Params = {}) {
+export default function useTable({ data, onDelete, onEdit }: Params) {
   // Définition des colonnes du tableau
   const columns = React.useMemo(
     () => [
@@ -84,16 +86,22 @@ export default function useTable({ data, onEdit }: Params = {}) {
             <span className="items-center hidden gap-2 group-hover:inline-flex">
               <IconButton
                 tooltip="Éditer le raid"
-                onClick={() => onEdit?.(row.original)}
+                onClick={() => onEdit(row.original)}
               >
                 <Pen className="text-primary-main" />
+              </IconButton>
+              <IconButton
+                tooltip="Supprimer le raid"
+                onClick={() => onDelete(row.original)}
+              >
+                <Trash className="text-red-500" />
               </IconButton>
             </span>
           </div>
         ),
       }),
     ],
-    [onEdit]
+    [onDelete, onEdit]
   )
 
   return useReactTable({
