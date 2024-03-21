@@ -2,8 +2,9 @@ import React from "react"
 
 import useRaids from "api/useRaids"
 import useDebounce from "hooks/useDebounce"
-import type { LootType } from "config/loot"
 import useTable from "./useTable"
+import type { Raid } from "schemas/raids"
+import type { LootType } from "config/loot"
 
 import Table from "components/ui/Table"
 import TextInput from "components/ui/TextInput"
@@ -21,6 +22,7 @@ export default function Raids(props: React.ComponentProps<"section">) {
   const [selectedLootTypes, setSelectedLootTypes] = React.useState<LootType[]>(
     []
   )
+  const [selectedRaid, setSelectedRaid] = React.useState<Raid>()
 
   const { data, isLoading } = useRaids({
     query: debouncedQuery,
@@ -28,6 +30,7 @@ export default function Raids(props: React.ComponentProps<"section">) {
   })
   const table = useTable({
     data,
+    onEdit: setSelectedRaid,
   })
 
   return (
@@ -61,8 +64,12 @@ export default function Raids(props: React.ComponentProps<"section">) {
       </div>
       <Table isLoading={isLoading} table={table} className="mt-5" />
       <RaidModal
-        open={newRaidModalOpen}
-        onClose={() => setNewRaidModalOpen(false)}
+        raid={selectedRaid}
+        open={newRaidModalOpen || !!selectedRaid}
+        onClose={() => {
+          setNewRaidModalOpen(false)
+          setSelectedRaid(undefined)
+        }}
       />
     </section>
   )

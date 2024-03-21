@@ -1,10 +1,12 @@
 import React from "react"
 import clsx from "clsx"
 
-import useNewRaid from "api/useNewRaid"
 import { LOOT_CONFIG } from "config/loot"
+import useNewRaid from "api/useNewRaid"
+import useUpdateRaid from "api/useUpdateRaid"
 import useRaidForm from "./useRaidForm"
 import type { LootType } from "config/loot"
+import type { Raid } from "types/data"
 
 import Button from "components/ui/Button"
 import DatePicker from "components/ui/DatePicker"
@@ -14,23 +16,38 @@ import Trash from "components/icons/TrashOutline"
 import IconButton from "components/ui/IconButton"
 
 type Props = {
+  raid?: Raid
   open: boolean
   onClose: () => void
 }
 
-export default function RaidModal(props: Props) {
+export default function RaidModal({ raid, ...props }: Props) {
   // Mutation pour créer un nouveau raid
   const { mutate: createRaid, isPending: isCreatingRaid } = useNewRaid()
+  // Mutation pour mettre à jour un raid
+  const { mutate: updateRaid, isPending: isUpdating } = useUpdateRaid()
 
   const { state, setState, handleSubmit, errors, reset } = useRaidForm({
+    raid,
     onSubmit: (data) => {
-      createRaid(data, {
-        onSuccess: handleClose,
-      })
+      if (!!raid) {
+        updateRaid(
+          { data, raidId: raid.id },
+          {
+            onSuccess: handleClose,
+          }
+        )
+      } else {
+        createRaid(data, {
+          onSuccess: handleClose,
+        })
+      }
     },
   })
   const { name, location, date, loot } = state
   const { nameError, locationError, dateError, lootError } = errors
+  const isEditing = !!raid
+  const isPending = isCreatingRaid || isUpdating
 
   // Gestion des changements de quantité de butin
   function handleLootValueChange(content: string | null, type: LootType) {
@@ -51,9 +68,11 @@ export default function RaidModal(props: Props) {
 
   return (
     <Modal {...props} large>
-      <Modal.Title>Nouveau Raid</Modal.Title>
+      <Modal.Title>{isEditing ? raid.name : "Nouveau Raid"}</Modal.Title>
       <Modal.Subtitle>
-        L'équipage a pillé un nouvel emplacement ? Enregistre le butin récolté :
+        {!!raid
+          ? "Du butin à réaffecter ? Le raid à renommer ? Pas de problèmes, modifie les informations du raid ci-dessous :"
+          : "L'équipage a pillé un nouvel emplacement ? Enregistre le butin récolté :"}
       </Modal.Subtitle>
       <form onSubmit={handleSubmit}>
         <Modal.Body className="flex flex-col gap-4">
@@ -117,9 +136,9 @@ export default function RaidModal(props: Props) {
           <Button fullWidth variant="outlinePrimary" onClick={handleClose}>
             Annuler
           </Button>
-          <Button fullWidth type="submit" disabled={isCreatingRaid}>
-            Enregistrer
-            {isCreatingRaid && "..."}
+          <Button fullWidth type="submit" disabled={isPending}>
+            {isEditing ? "Modifier" : "Enregistrer"}
+            {isPending && "..."}
           </Button>
         </Modal.Actions>
       </form>

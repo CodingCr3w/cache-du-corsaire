@@ -2,6 +2,7 @@ import React from "react"
 import { ZodError, z } from "zod"
 
 import { LootType } from "config/loot"
+import type { Raid } from "schemas/raids"
 
 // Décrit le schéma de validation du formulaire
 const raidFormSchema = z.object({
@@ -41,12 +42,33 @@ const initialState: RaidForm = {
  * Hook responsable du state et de la validation du formulaire de raid.
  */
 export default function useForm({
+  raid,
   onSubmit,
 }: {
+  raid?: Raid
   onSubmit: (data: RaidForm) => void
 }) {
   const [state, setState] = React.useState<RaidForm>(initialState)
   const { name, location, date, loot } = state
+
+  // Si on a un raid, on le charge dans le formulaire
+  React.useEffect(() => {
+    if (!!raid) {
+      setState({
+        name: raid.name,
+        location: raid.located,
+        date: new Date(raid.time),
+        loot: raid.loot.reduce(
+          (acc, item) => {
+            const key = item.type as LootType
+            acc[key] = item.quantity
+            return acc
+          },
+          {} as RaidForm["loot"]
+        ),
+      })
+    }
+  }, [raid])
 
   const [errors, setErrors] = React.useState<FormErrors>({})
   // Réinitialise les erreurs quand les champs changent

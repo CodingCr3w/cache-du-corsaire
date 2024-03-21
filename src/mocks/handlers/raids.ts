@@ -100,4 +100,13 @@ export const handlers = [
       return HttpResponse.json({ ok: true })
     }
   ),
+  // DELETE /api/raids/:id
+  http.delete<{ id: string }>("api/raids/:id", async ({ params }) => {
+    const raidId = params.id
+    // Supprime le raid de la liste
+    const raidIndex = raids.findIndex((raid) => raid.id === raidId)
+    raids.splice(raidIndex, 1)
+    await delay(DELAY)
+    return HttpResponse.json({ ok: true })
+  }),
 ]
