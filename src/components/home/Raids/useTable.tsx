@@ -12,6 +12,8 @@ import { LOOT_CONFIG } from "config/loot"
 import type { Raid } from "types/data"
 
 import Tooltip from "components/ui/Tooltip"
+import IconButton from "components/ui/IconButton"
+import Pen from "components/icons/Pen"
 
 // On précise le type de données que l'on souhaite afficher dans le tableau
 // en créant un helper qui va nous permettre de définir les colonnes
@@ -21,9 +23,10 @@ const DEFAULT_DATA: Raid[] = []
 
 type Params = {
   data?: Raid[]
+  onEdit?: (raid: Raid) => void
 }
 
-export default function useTable({ data }: Params = {}) {
+export default function useTable({ data, onEdit }: Params = {}) {
   // Définition des colonnes du tableau
   const columns = React.useMemo(
     () => [
@@ -72,8 +75,25 @@ export default function useTable({ data }: Params = {}) {
         ),
         enableSorting: false,
       }),
+      columnHelper.display({
+        id: "actions",
+        header: "",
+        // Affichage des boutons d'actions sur la ligne
+        cell: ({ row }) => (
+          <div className="w-10 h-5">
+            <span className="items-center hidden gap-2 group-hover:inline-flex">
+              <IconButton
+                tooltip="Éditer le raid"
+                onClick={() => onEdit?.(row.original)}
+              >
+                <Pen className="text-primary-main" />
+              </IconButton>
+            </span>
+          </div>
+        ),
+      }),
     ],
-    []
+    [onEdit]
   )
 
   return useReactTable({

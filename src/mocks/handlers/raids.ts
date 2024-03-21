@@ -78,4 +78,26 @@ export const handlers = [
     await delay(DELAY)
     return HttpResponse.json({ ok: true })
   }),
+  // PATCH /api/raids/:id
+  http.patch<{ id: string }, NewRaid>(
+    "api/raids/:id",
+    async ({ params, request }) => {
+      const raidId = params.id
+      const raidIndex = raids.findIndex((raid) => raid.id === raidId)
+      const raid = await request.json()
+      // Met à jour le raid dans la liste
+      raids[raidIndex] = {
+        ...raids[raidIndex],
+        name: raid.name,
+        from: raid.location,
+        located: raid.location,
+        loot: Object.entries(raid.loot).map(([type, quantity]) => ({
+          type: type as LootType,
+          quantity,
+        })),
+      }
+      await delay(DELAY)
+      return HttpResponse.json({ ok: true })
+    }
+  ),
 ]

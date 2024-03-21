@@ -1,7 +1,9 @@
 import React from "react"
 import clsx from "clsx"
 
+import useNewRaid from "api/useNewRaid"
 import { LOOT_CONFIG } from "config/loot"
+import useRaidForm from "./useRaidForm"
 import type { LootType } from "config/loot"
 
 import Button from "components/ui/Button"
@@ -17,47 +19,107 @@ type Props = {
 }
 
 export default function RaidModal(props: Props) {
+  // Mutation pour créer un nouveau raid
+  const { mutate: createRaid, isPending: isCreatingRaid } = useNewRaid()
+
+  const { state, setState, handleSubmit, errors, reset } = useRaidForm({
+    onSubmit: (data) => {
+      createRaid(data, {
+        onSuccess: handleClose,
+      })
+    },
+  })
+  const { name, location, date, loot } = state
+  const { nameError, locationError, dateError, lootError } = errors
+
+  // Gestion des changements de quantité de butin
+  function handleLootValueChange(content: string | null, type: LootType) {
+    if (!content) {
+      setState((prev) => ({ ...prev, loot: { ...prev.loot, [type]: 0 } }))
+      return
+    }
+    const value = parseInt(content, 10)
+    if (isNaN(value)) return
+    setState((prev) => ({ ...prev, loot: { ...prev.loot, [type]: value } }))
+  }
+
+  // Fermeture du modal (on reset le state)
+  function handleClose() {
+    reset()
+    props.onClose()
+  }
+
   return (
     <Modal {...props} large>
       <Modal.Title>Nouveau Raid</Modal.Title>
       <Modal.Subtitle>
         L'équipage a pillé un nouvel emplacement ? Enregistre le butin récolté :
       </Modal.Subtitle>
-      <form>
+      <form onSubmit={handleSubmit}>
         <Modal.Body className="flex flex-col gap-4">
           <TextInput
             autoComplete="off"
             name="raid-name"
             label="Nom du raid"
             placeholder="Ex: Attaque surprise de la flotte royale"
+            value={name}
+            onChange={(evt) =>
+              setState((prev) => ({ ...prev, name: evt.target.value }))
+            }
+            error={nameError}
           />
           <TextInput
             autoComplete="off"
             name="raid-location"
             label="Lieu"
             placeholder="Ex: La baie des requins"
+            value={location}
+            onChange={(evt) =>
+              setState((prev) => ({ ...prev, location: evt.target.value }))
+            }
+            error={locationError}
           />
-          <DatePicker name="raid-date" label="Date du raid" />
+          <DatePicker
+            name="raid-date"
+            label="Date du raid"
+            dates={[date]}
+            onDatesChange={(dates) =>
+              setState((prev) => ({ ...prev, date: dates[0] }))
+            }
+            error={dateError}
+          />
           <fieldset
             name="raid-loot"
+            aria-invalid={!!lootError}
             className="px-4 pb-4 border rounded-lg border-surface-300 aria-[invalid=true]:border-red-600"
           >
             <legend className="px-2 mb-2 font-semibold text-gray-50">
               Butin
             </legend>
+            {!!lootError && (
+              <p className="mb-4 text-sm text-red-600">{lootError}</p>
+            )}
             <div className="flex flex-wrap max-w-[44rem] gap-4">
               {Object.keys(LOOT_CONFIG).map((type) => (
-                <LootItem key={type} type={type as LootType} />
+                <LootItem
+                  key={type}
+                  type={type as LootType}
+                  quantity={loot[type as LootType]}
+                  onChange={(value) =>
+                    handleLootValueChange(value, type as LootType)
+                  }
+                />
               ))}
             </div>
           </fieldset>
         </Modal.Body>
         <Modal.Actions>
-          <Button fullWidth variant="outlinePrimary" onClick={props.onClose}>
+          <Button fullWidth variant="outlinePrimary" onClick={handleClose}>
             Annuler
           </Button>
-          <Button fullWidth type="submit">
+          <Button fullWidth type="submit" disabled={isCreatingRaid}>
             Enregistrer
+            {isCreatingRaid && "..."}
           </Button>
         </Modal.Actions>
       </form>
