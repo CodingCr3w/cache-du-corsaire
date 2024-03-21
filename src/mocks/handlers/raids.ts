@@ -2,12 +2,20 @@ import { HttpResponse, delay, http } from "msw"
 import Fuse from "fuse.js"
 
 import { generateRaids } from "mocks/data/raids"
+import type { LootType } from "config/loot"
 
 // Simule un délai de réponse de 1 seconde
 const DELAY = 1000
 
 // Génère un jeu de données de raids
 const raids = generateRaids()
+
+type NewRaid = {
+  name: string
+  location: string
+  date: Date
+  loot: Record<LootType, number>
+}
 
 export const handlers = [
   // GET /api/raids
@@ -50,5 +58,24 @@ export const handlers = [
     // Simule un délai de réponse
     await delay(DELAY)
     return HttpResponse.json(results)
+  }),
+  // POST /api/raids
+  http.post<any, NewRaid>("api/raids", async ({ request }) => {
+    // Récupère le raid depuis la requête
+    const raid = await request.json()
+    // Ajoute le raid à la liste
+    raids.push({
+      id: raids.length.toString(),
+      name: raid.name,
+      from: raid.location,
+      time: new Date().getTime(),
+      located: raid.location,
+      loot: Object.entries(raid.loot).map(([type, quantity]) => ({
+        type: type as LootType,
+        quantity,
+      })),
+    })
+    await delay(DELAY)
+    return HttpResponse.json({ ok: true })
   }),
 ]

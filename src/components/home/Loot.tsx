@@ -1,6 +1,7 @@
 import React from "react"
 import clsx from "clsx"
 
+import useRaids from "api/useRaids"
 import { LOOT_CONFIG } from "config/loot"
 import useAnimatedValue from "hooks/useAnimatedValue"
 import { TREASURE } from "mocks/data/treasure"
@@ -12,7 +13,27 @@ import Spinner from "components/ui/Spinner"
 const DEFAULT_HIDEOUT = "Toutes les planques"
 
 export default function Loot(props: React.ComponentProps<"section">) {
-  const isLoading = false
+  const [hideout, setHideout] = React.useState(DEFAULT_HIDEOUT)
+
+  const { data: loot, isLoading: isLoadingLoot } = useRaids({
+    hideout: hideout === DEFAULT_HIDEOUT ? undefined : hideout,
+    select: (raids) =>
+      raids.reduce(
+        (acc, raid) => {
+          raid.loot.forEach((loot) => {
+            acc[loot.type] = (acc[loot.type] ?? 0) + loot.quantity
+          })
+          return acc
+        },
+        {} as Record<LootType, number>
+      ),
+  })
+  const { data: hideouts, isLoading: isLoadingHideouts } = useRaids({
+    select: (raids) => [...new Set(raids.map((raid) => raid.located))],
+  })
+
+  const isLoading = isLoadingLoot || isLoadingHideouts
+
   return (
     <section aria-label="Butin de l'équipage" {...props}>
       <div className="flex flex-col justify-between gap-2 mb-5 md:items-center md:flex-row">
@@ -21,8 +42,14 @@ export default function Loot(props: React.ComponentProps<"section">) {
           actuellement :
         </p>
         <div className="flex items-center gap-2">
-          <Select hideLabel defaultValue={DEFAULT_HIDEOUT} label="Planque">
-            {[DEFAULT_HIDEOUT].map((planque) => (
+          <Select
+            hideLabel
+            defaultValue={DEFAULT_HIDEOUT}
+            label="Planque"
+            value={hideout}
+            onValueChange={setHideout}
+          >
+            {[DEFAULT_HIDEOUT, ...(hideouts || [])].map((planque) => (
               <Select.Item key={planque} value={planque}>
                 {planque}
               </Select.Item>
@@ -38,7 +65,7 @@ export default function Loot(props: React.ComponentProps<"section">) {
           <LootItem
             key={treasure.type}
             type={treasure.type}
-            quantity={treasure.quantity}
+            quantity={loot?.[treasure.type]}
           />
         ))}
       </div>
